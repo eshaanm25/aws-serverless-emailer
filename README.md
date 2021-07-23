@@ -24,7 +24,7 @@ A Terraform script that creates a serverless static website, an API, a Lambda fu
 
 1. Download the repository to your local machine with the following code.
 
-    git clone https://github.com/eshaanm25/serverless-emailer
+    `git clone https://github.com/eshaanm25/serverless-emailer`
     
 2. Fill out the `terraform.tfvars` file with the required environment variables. Variable descriptions can also be found in `variables.tf`
 

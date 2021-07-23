@@ -1,7 +1,7 @@
 ﻿# AWS Serverless E-Mail API
 A Terraform script that creates a serverless static website, an API, a Lambda function, and DynamoDB table for the purpose of creating an serverless web-form that can send personalized e-mails to website visitors. This is a personal project to learn more about Terraform, Serverless Tools in AWS, and API's. A demo of this website can be found at [Serverless E-Mail Demo](https://interview.engineer)
 # Design
-![AWS Project Diagram](https://disney.eshaanm.com/graph2.png)
+![AWS Project Diagram](https://disney.eshaanm.com/graph7.png)
 1. Website visitors use Route 53 DNS to access a CloudFront Distribution associated with an S3 Bucket
 2.  Once the website is loaded, Users fill out a form which is used to make a POST request to an API Gateway REST API
 3. The REST API triggers a Lambda function that stores the user data in a DynamoDB table and utilizes SendGrid API's to send an e-mail.
@@ -44,4 +44,7 @@ A Terraform script that creates a serverless static website, an API, a Lambda fu
 3. Navigate to the repository directory and initialize Terraform by running `terraform init`
 4. Execute the actions proposed in a Terraform plan by running `terraform apply`
 
-
+## Helpful Resources Used
+- [Serverless Applications with AWS Lambda and API Gateway](https://registry.terraform.io/providers/hashicorp/aws/2.34.0/docs/guides/serverless-with-aws-lambda-and-api-gateway) 
+- [AWS Static Website Terraform Module](https://registry.terraform.io/modules/cloudmaniac/static-website/aws/latest)
+- [Terraform and CORS-Enabled AWS API Gateway](https://mrponath.medium.com/terraform-and-aws-api-gateway-a137ee48a8ac)

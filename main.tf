@@ -43,6 +43,7 @@ resource "aws_acm_certificate" "wildcard_website" {
   })
 
   lifecycle {
+    create_before_destroy = true
     ignore_changes = [tags["Changed"]]
   }
 
@@ -108,11 +109,54 @@ resource "aws_s3_bucket" "website_logs" {
   }
 }
 
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "website_logs" {
+  bucket = aws_s3_bucket.website_logs.bucket
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm     = "AES256"
+    }
+  }
+}
+
+
+
+resource "aws_s3_bucket" "website_logs_log_bucket" {
+  bucket = "website_logs-log-bucket"
+}
+
+resource "aws_s3_bucket_logging" "website_logs" {
+  bucket = aws_s3_bucket.website_logs.id
+
+  target_bucket = aws_s3_bucket.website_logs_log_bucket.id
+  target_prefix = "log/"
+}
+
+
+resource "aws_s3_bucket_versioning" "website_logs" {
+  bucket = aws_s3_bucket.website_logs.id
+
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "website_logs" {
+  bucket = aws_s3_bucket.website_logs.bucket
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm     = "aws:kms"
+    }
+  }
+}
+
 # Creates bucket to store the static website
 resource "aws_s3_bucket" "website_root" {
   bucket = "${var.site-domain}-root"
-  acl    = "public-read"
-
+  acl    = "private"
   # Comment the following line if you are uncomfortable with Terraform destroying the bucket even if not empty
   force_destroy = true
 
@@ -136,10 +180,42 @@ resource "aws_s3_bucket" "website_root" {
   }
 }
 
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "website_root" {
+  bucket = aws_s3_bucket.website_root.bucket
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm     = "AES256"
+    }
+  }
+}
+
+
+
+resource "aws_s3_bucket_versioning" "website_root" {
+  bucket = aws_s3_bucket.website_root.id
+
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "website_root" {
+  bucket = aws_s3_bucket.website_root.bucket
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm     = "aws:kms"
+    }
+  }
+}
+
 # Creates bucket for the website handling the redirection (if required), e.g. from https://www.example.com to https://example.com
 resource "aws_s3_bucket" "website_redirect" {
   bucket        = "${var.site-domain}-redirect"
-  acl           = "public-read"
+  acl           = "private"
   force_destroy = true
 
   logging {
@@ -158,6 +234,38 @@ resource "aws_s3_bucket" "website_redirect" {
 
   lifecycle {
     ignore_changes = [tags["Changed"]]
+  }
+}
+
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "website_redirect" {
+  bucket = aws_s3_bucket.website_redirect.bucket
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm     = "AES256"
+    }
+  }
+}
+
+
+
+resource "aws_s3_bucket_versioning" "website_redirect" {
+  bucket = aws_s3_bucket.website_redirect.id
+
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "website_redirect" {
+  bucket = aws_s3_bucket.website_redirect.bucket
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm     = "aws:kms"
+    }
   }
 }
 
@@ -216,6 +324,7 @@ resource "aws_cloudfront_distribution" "website_cdn_root" {
   }
 
   viewer_certificate {
+    minimum_protocol_version = "TLSv1.2_2021"
     acm_certificate_arn = data.aws_acm_certificate.wildcard_website.arn
     ssl_support_method  = "sni-only"
   }
@@ -330,6 +439,7 @@ resource "aws_cloudfront_distribution" "website_cdn_redirect" {
   }
 
   viewer_certificate {
+    minimum_protocol_version = "TLSv1.2_2021"
     acm_certificate_arn = data.aws_acm_certificate.wildcard_website.arn
     ssl_support_method  = "sni-only"
   }
@@ -373,6 +483,9 @@ resource "aws_dynamodb_table" "dynamodb-table-email" {
     type = "S"
   }
 
+  point_in_time_recovery {
+    enabled = true
+  }
 }
 
 #Create Lambda Function IAM Policy
@@ -441,12 +554,18 @@ resource "aws_lambda_function" "EmailLambda" {
       AWS_DYNAMODB_REGION = var.aws-region
     }
   }
+  tracing_config {
+    mode = "PassThrough"
+  }
 }
 
 ###Create a REST API with API Gateway
 resource "aws_api_gateway_rest_api" "serverlessapi" {
   name        = "ServerlessAPI"
   description = "Terraform Serverless Application Example"
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 #Create API
@@ -534,6 +653,9 @@ resource "aws_api_gateway_deployment" "stage" {
 
   rest_api_id = "${aws_api_gateway_rest_api.serverlessapi.id}"
   stage_name  = "prod"
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 resource "local_file" "apiscriptfile" {
